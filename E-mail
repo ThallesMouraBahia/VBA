@@ -1,0 +1,241 @@
+Public SacolaResultado, Sacolameta, BobinaResultado, BobinaMeta, FilmeResultado, FilmeMeta, NomeArquivo As Variant
+
+Sub CriarPdf_Enviar_Loja()
+
+'Modulo responsavel por enviar email personalizado para cada loja com os resultados inventário dos itens de 'Uso e Consumo'
+
+    Dim Loja As Long
+    Dim NomeLoja As String
+    Dim Data As String
+    Dim IndiceLoja As Long
+    Dim Emails As String
+
+    
+    Dim resultado As VbMsgBoxResult
+
+         resultado = MsgBox("Deseja realmente rodar a macro. Caso aperte sim, será enviado email para todas as lojas com o resultado da planilha!", vbYesNo, "Tomando uma decisão")
+         
+         If resultado = vbNo Then
+         
+            MsgBox "Processo cancelado"
+            End
+         
+        End If
+         
+    Application.ScreenUpdating = False
+    
+    
+    Call CriarPastaPDF
+    Call ExtrairCodigoLoja
+    Call PreencherInfoLojas
+    
+    'Apagar dados antigos na planilha ['Base_Python']
+    Sheets("Base_Python").Range("A2:I1048576").ClearContents
+    
+    
+    CaminhoFerramenta = Application.ThisWorkbook.Path
+    CaminhoFerramentaPDF = CaminhoFerramenta & "\PDF'S\"
+    
+    'Trabalhar na planilha ['Grafico']
+    Planilha5.Activate
+    
+    IndiceLoja = 2
+    
+    Do Until Sheets("Loja").Range("A" & IndiceLoja) = ""
+        
+        Loja = Sheets("Loja").Range("A" & IndiceLoja)
+        NomeLoja = Sheets("Loja").Range("B" & IndiceLoja)
+        Data = Format(Sheets("Grafico").Range("N4").Value, "mmm_yyyy")
+        
+        
+        'Inserir número da loja na planilha 'Grafico' para buscar resultados da loja
+        Sheets("Grafico").Range("E4").Value = Loja
+
+        
+
+        
+        NomeArquivo = CaminhoFerramentaPDF & "Loja " & Format(Loja, "000") & " - " & NomeLoja & " · Resultado Inventário Uso e Consumo (" & Data & ")"
+        
+        
+
+        'Sheets("Grafico").ExportAsFixedFormat Type:=xlTypePDF, Filename:=NomeArquivo, _
+                Quality:=xlQualityStandard, IncludeDocProperties:=True, IgnorePrintAreas _
+                :=False, OpenAfterPublish:=False
+              
+        
+
+        Call ResultadoInventarios
+        
+        'Email da loja para mandar o email
+        Emails = Sheets("Loja").Range("E" & IndiceLoja).Value
+        
+        '========================= ESCREVER EMAIL ===============================================
+        
+        Call Saudacao
+            
+            
+        Texto1 = comprimento
+        Texto2 = "Segue em anexo resultado dos inventários de "
+        Texto3 = "Bobinas Plásticas, Sacola Plástica, Filme PVC "
+        Texto4 = "e a venda de "
+        Texto5 = "Sacola Retornável "
+        Texto6 = "referente ao mês de "
+        Texto7 = Format(Sheets("Grafico").Range("N4").Value, "mmm/yyyy") & "."
+        
+        Texto8 = "Favor imprimir e entregar ao gerente e APP"
+        
+        Texto9 = "Entendendo os indicadores: "
+        
+        
+        ''----------- Sacola Plástica -----------------------------
+        Texto10 = "O cálculo do indicador de gastos com "
+        Texto11 = "sacolinha plástica (Cliente) "
+        Texto12 = "é: "
+        
+        Texto13 = "Quantidade de Sacola (unidade) / (Venda/100)"
+        
+        Texto14 = "Exemplo: "
+        
+        Texto15 = "Quantidade de Sacola Gasta pela loja: 50.000 (50 Fardos)"
+        Texto16 = "Venda da Loja: R$ 1.000.000 ,00 (Um Milhão de Reais)"
+        Texto17 = "Venda da Loja, divido por 100: 10.000 (Dez mil)"
+        
+        Texto18 = "Indicador Exemplo: 5,0"
+        
+        Texto19 = "O indicador da sua loja foi de "
+        Texto20 = Format(SacolaResultado, "0.00") & ". "
+        
+        If SacolaResultado > 0 Then
+        
+            Texto21 = "O que significa que sua loja está consumindo " & Format(SacolaResultado, "0.00") & " sacolas para cada R$ 100,00 de venda. A meta " & _
+                    "da sua loja é de " & Sacolameta
+           
+        ElseIf SacolaResultado < 0 Then
+        
+            Texto21 = "Por se tratar de um resultado negativo, demonstra que sua loja obteve um resultado crítico, causado principalmente pelos seguintes eventos, como contagem incorreta no inventário anterior, ou atual, ou falta de finalização de notas fiscais" & _
+                        "Esses fatores podem impactar diretamente nos resultados e é essencial compreendê-los para tomar medidas corretivas eficazes."
+             
+        End If
+                
+        '----------- Bobina FLV -----------------------------
+        Texto22 = "O cálculo do indicador de gastos com "
+        Texto23 = "Bobina (Hortifruti) "
+        Texto24 = "é: "
+        
+        'Variavel 'TipoVenda' vai armazernar qual o tipo de venda que será utilizado no indicador do inventário de bobina
+        TipoVenda = Sheets("Grafico").Range("R2").Value
+        
+        
+        Texto25 = "Despesa bobina R$ / Venda " & TipoVenda
+        
+        Texto26 = "Exemplo: "
+        
+        Texto27 = "Valor da despesa de bobina da Loja: R$ 2.000,00 (Dois mil reais)"
+        Texto28 = "Venda de " & TipoVenda & " da loja : R$ 200.000,00 (Duzentos mil reais)"
+        
+        Texto29 = "Indicador Exemplo: 1,00% "
+        
+        
+        Texto30 = "O indicador da sua loja foi de "
+        Texto31 = Format(BobinaResultado, "0.00%") & ". "
+        
+        If BobinaResultado > 0 Then
+        
+            Texto32 = "O que significa que sua loja está consumindo R$ " & Format(BobinaResultado * 100, "0.00") & " de bobina para cada R$ 100,00 de venda. A meta " & _
+                "da sua loja é de R$ " & Format(BobinaMeta * 100, "0.00")
+                
+        ElseIf BobinaResultado < 0 Then
+        
+            Texto32 = "Por se tratar de um resultado negativo, demonstra que sua loja obteve um resultado crítico, causado principalmente pelos seguintes eventos, como contagem incorreta no inventário anterior, ou atual, ou falta de finalização de notas fiscais" & _
+                        "Esses fatores podem impactar diretamente nos resultados e é essencial compreendê-los para tomar medidas corretivas eficazes."
+             
+        End If
+                
+                
+        '----------- Filme PVC -----------------------------
+        Texto33 = "O cálculo do indicador de gastos com "
+        Texto34 = "Filme PVC "
+        Texto35 = "é: "
+        
+        Texto36 = "Gasto filme PVC / Venda Frios e Açougue"
+        
+        Texto37 = "Exemplo: "
+        
+        Texto38 = "Valor da despesa de filme PVC da Loja: R$ 3.500,00 (três mil e quinhetos reais)"
+        Texto39 = "Venda de frios e açougue da loja : R$ 200.000,00 (Duzentos mil reais)"
+        
+        Texto40 = "Indicador Exemplo: 1,75% "
+        
+        
+        Texto41 = "O indicador da sua loja foi de "
+        Texto42 = Format(FilmeResultado, "0.00%") & ". "
+        
+        If FilmeResultado > 0 Then
+        
+            Texto43 = "O que significa que sua loja está consumindo R$ " & Format(FilmeResultado * 100, "0.00") & " filme PVC para cada R$ 100,00 de venda de frios e açougue. A meta " & _
+                    "da sua loja é de R$ " & Format(FilmeMeta * 100, "0.00")
+                
+        ElseIf FilmeResultado < 0 Then
+        
+            Texto43 = "Por se tratar de um resultado negativo, demonstra que sua loja obteve um resultado crítico, causado principalmente pelos seguintes eventos, como contagem incorreta no inventário anterior, ou atual, ou falta de finalização de notas fiscais" & _
+                        "Esses fatores podem impactar diretamente nos resultados e é essencial compreendê-los para tomar medidas corretivas eficazes."
+            
+        End If
+        
+        Texto44 = "No anexo o Mês de Abril não tem resultado atribuido por não ter realizado inventário neste mês."
+        
+        Set objeto_outlook = CreateObject("Outlook.Application")
+        Set Email = objeto_outlook.CreateItem(0)
+        Email.Display
+        Email.To = Emails
+        'Email.cc = EmailCopia
+        'Email.bcc = ""
+        
+        
+        DataInventario = Format(Sheets("Grafico").Range("N4").Value, "mmm/yyyy")
+        
+        Email.Subject = "[APP] Resultado inventario: sacola plástica, bobina plástica e filme PVC (" & DataInventario & ")"
+        
+        
+        Email.HTMLBody = "<Font Face = Arial><Font Size = 4>" & Texto1 & "<br><br>" & _
+                        Texto2 & "<b>" & Texto3 & "</b>" & Texto4 & "<b>" & Texto5 & "</b>" & Texto6 & "<b><u><Font Color = #FF0000>" & Texto7 & "</b></u><Font Color = #000000><br><br>" & _
+                        "<span style='background-color: #FFFF00;'><b><Font Size =5>" & Texto8 & "<Font Size = 4></b></span><br><br>" & _
+                        "&#128218;" & "<b><u>" & Texto9 & "</b></u><br><br><br>" & _
+                        "&#128994; " & Texto10 & "<b>" & Texto11 & "</b>" & Texto12 & "<br><br>" & _
+                        "&#129518; " & "<b><u><Font color = #00B050>" & Texto13 & "<Font color = #000000></u></b><br><br>" & _
+                        "<u><span style = 'background-color: #D3D3D3'>" & Texto14 & "</u><br><br>" & _
+                        Texto15 & "<br><br>" & _
+                        Texto16 & "<br><br>" & _
+                        Texto17 & "<br><br><br>" & _
+                        "<u>" & Texto18 & "</span></u><br><br><br>" & _
+                        "<b>" & Texto19 & "<Font color = #FF0000><b><span style = 'background-color: #FFFF00'>" & Texto20 & "</span><Font color =#000000 ></b><br><br><i>" & Texto21 & "</i><br><br><br>" & _
+                        "_____________________________________" & "<br><br>" & _
+                        "&#128994; " & "</b>" & Texto22 & "<b>" & Texto23 & "</b>" & Texto24 & "<br><br>" & _
+                        "&#129518; " & "<u><Font color = #00B050><b>" & Texto25 & "<Font color = #000000></u></b><br><br>" & _
+                        "<u><span style = 'background-color: #D3D3D3'>" & Texto26 & "</u><br><br>" & _
+                        Texto27 & "<br><br>" & Texto28 & "<br><br>" & Texto29 & "<br><br><br></span>" & "<b>" & Texto30 & "<Font color = #FF0000><b><span style = 'background-color: #FFFF00'>" & Texto31 & "</span><Font color =#000000 ></b><br><br><i>" & Texto32 & "</i><br><br>" & "_____________________________________" & "<br><br>" & "&#128994; " & "</b>" & Texto33 & "<b>" & Texto34 & "</b>" & Texto35 & "<br><br>" & "&#129518; " & "<u><Font color = #00B050><b>" & Texto36 & "<Font color = #000000></u></b><br><br>" & "<u><span style = 'background-color: #D3D3D3'>" & Texto37 & "</u><br><br>" & Texto38 & "<br><br>" & Texto39 & "<br><br>" & Texto40 & "<br><br><br></span>" & "<b>" & Texto41 & "<Font color = #FF0000><b><span style = 'background-color: #FFFF00'>" & Texto42 & "</span><Font color =#000000 ></b><br><br><i>" & Texto43 & "." & "<br><br>" & Texto44 & Email.HTMLBody
+        
+        
+  
+        Email.Attachments.Add (NomeArquivo & ".pdf")
+        
+        Email.Attachments.Add (CaminhoFerramenta & "\Explicativo_Resultado.pdf")
+        Email.Send
+        
+
+
+        
+        ''========================= FIM DA ESCRITA DO EMAIL ===============================================
+        
+        Call InserirDadosPython
+        
+        
+        IndiceLoja = IndiceLoja + 1
+        
+    Loop
+    
+    Application.ScreenUpdating = False
+    
+    MsgBox "Emails Enviados com Sucesso!"
+    
+End Sub
